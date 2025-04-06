@@ -1,0 +1,37 @@
+version: '3.8'
+
+services:
+  mysql:
+    image: mysql:latest
+    container_name: mysql-container
+    environment:
+      MYSQL_ROOT_PASSWORD: rootpassword
+      MYSQL_DATABASE: fastapi_db
+      MYSQL_USER: admin
+      MYSQL_PASSWORD: adminpassword
+    ports:
+      - "3306:3306"
+    volumes:
+      - mysql-data:/var/lib/mysql
+    networks:
+      - fastapi-network
+
+  app:
+    build: .
+    container_name: fastapi-app
+    environment:
+      - DATABASE_URL=mysql+mysqlconnector://admin:adminpassword@mysql:3306/fastapi_db
+    ports:
+      - "8000:8000"
+    depends_on:
+      - mysql
+    command: /wait-for-it.sh mysql:3306 -- uvicorn app.main:app --host 0.0.0.0 --port 8000 --reload
+    networks:
+      - fastapi-network
+
+volumes:
+  mysql-data:
+
+networks:
+  fastapi-network:
+    driver: bridge
