@@ -10,5 +10,5 @@ init_db()
 app.include_router(auth_router)
 app.include_router(post_router)
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     uvicorn.run(app, host="127.0.0.1", port=8000)

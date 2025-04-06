@@ -1,14 +1,16 @@
-from fastapi import APIRouter, HTTPException, Depends
+import os
+from datetime import datetime, timedelta
+
+from fastapi import APIRouter, Depends, HTTPException
 from fastapi.security import OAuth2PasswordBearer
+from jose import JWTError, jwt
+from passlib.context import CryptContext
 from sqlalchemy.orm import Session
+
+from app.core.db import get_db
 from app.models.user import User
 from app.schemas.auth_schema import Token
 from app.schemas.user_schema import UserCreate, UserResponse
-from app.core.db import get_db
-from passlib.context import CryptContext
-from jose import JWTError, jwt
-from datetime import datetime, timedelta
-import os
 
 auth_router = APIRouter()
 
@@ -52,7 +54,9 @@ def create_access_token(data: dict, expires_delta: timedelta = None) -> str:
     return encoded_jwt
 
 
-def get_current_user(db: Session = Depends(get_db), token: str = Depends(oauth2_scheme)) -> User:
+def get_current_user(
+    db: Session = Depends(get_db), token: str = Depends(oauth2_scheme)
+) -> User:
     """
     Get the current user from the JWT token.
     """
@@ -60,7 +64,9 @@ def get_current_user(db: Session = Depends(get_db), token: str = Depends(oauth2_
         payload = jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])
         email: str = payload.get("sub")
         if email is None:
-            raise HTTPException(status_code=403, detail="Could not validate credentials")
+            raise HTTPException(
+                status_code=403, detail="Could not validate credentials"
+            )
 
         user = db.query(User).filter(User.email == email).first()
         if user is None:
@@ -105,4 +111,3 @@ def login(user: UserCreate, db: Session = Depends(get_db)):
     access_token = create_access_token(data={"sub": db_user.email})
 
     return Token(access_token=access_token)
-
